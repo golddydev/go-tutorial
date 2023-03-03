@@ -2,31 +2,42 @@ package main
 
 import (
 	"fmt"
-	"log"
-
-	"example.com/greetings"
 )
 
-func main() {
-	// Set properties of the predefined Logger, including
-	// the log entry prefix and a flag to disable printing
-	// the time, source file, and line number.
-	log.SetPrefix("greetings: ")
-	log.SetFlags(0)
-
-	// A slice of names.
-	names := []string{"Gladys", "Samantha", "Darrin"}
-
-	// Request greeting messages for the names.
-	messages, err := greetings.Hellos(names)
-
-	// If an error was returned, print it to the console and
-	// exit the program.
-	if err != nil {
-		log.Fatal(err)
+func digits(number int, dchnl chan int) {
+	for number != 0 {
+		digit := number % 10
+		dchnl <- digit
+		number /= 10
 	}
+	close(dchnl)
+}
+func calcSquares(number int, squareop chan int) {
+	sum := 0
+	dch := make(chan int)
+	go digits(number, dch)
+	for digit := range dch {
+		sum += digit * digit
+	}
+	squareop <- sum
+}
 
-	// If no error was returned, print the returned message
-	// to the console.
-	fmt.Println(messages)
+func calcCubes(number int, cubeop chan int) {
+	sum := 0
+	dch := make(chan int)
+	go digits(number, dch)
+	for digit := range dch {
+		sum += digit * digit * digit
+	}
+	cubeop <- sum
+}
+
+func main() {
+	number := 589
+	sqrch := make(chan int)
+	cubech := make(chan int)
+	go calcSquares(number, sqrch)
+	go calcCubes(number, cubech)
+	squares, cubes := <-sqrch, <-cubech
+	fmt.Println("Final output", squares+cubes)
 }
